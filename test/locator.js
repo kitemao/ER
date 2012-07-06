@@ -13,14 +13,6 @@ test("redirect", function() {
     ok( testVar.onredirect === 1, 'locator.onredirect事件被触发' );
 });
 
-test("query parse", function() {
-    var name = '中国人民从此站起来了!@#$%^&*()_,./;\'[]{}:"<>?\|-_=+';
-    er.locator.redirect('/hello~name=' + encodeURIComponent(name) + '&test=hello');
-
-    var queryMap = er.locator.getQueryMap();
-    same( queryMap.name, name, "设置的name参数应该和parse的name query相等");
-    same( queryMap.test, 'hello', "设置的test参数应该和parse的name query相等");
-});
 
 asyncTest("back and forward", function() {
     er.locator.redirect('/test~name=er');
@@ -37,7 +29,7 @@ asyncTest("back and forward", function() {
         } else {
             same( location.hash, '#/hello~name=er%E6%A1%86%E6%9E%B6', "后退一次，location为/hello~name=er%E6%A1%86%E6%9E%B6" );
         }
-        
+
         history.back();
 
         setTimeout(function() {
@@ -55,9 +47,29 @@ asyncTest("back and forward", function() {
                 setTimeout(function() {
                     same( location.hash, '#/', "前进两次，location为/" );
                     start();
-                }, 200);
-            }, 200);
-        }, 200);
-    }, 200);
+                }, 400);
+            }, 400);
+        }, 400);
+    }, 400);
 
+});
+
+//enforce 
+
+testVar.redirectCount = 0;
+er.router.add( /^:([a-z]+)$/, function ( loc, val ) {
+    testVar.redirectCount++;
+});
+
+test("reload & enforce redirect", function() {
+    er.locator.redirect(':erik');
+    er.locator.redirect(':erik');
+   
+    same( testVar.redirectCount, 1, "相同的location不应该重复route" );
+
+    er.locator.redirect(':erik', {enforce:1} );
+    same( testVar.redirectCount, 2, "强制选项允许重复route" );
+
+    er.locator.reload();
+    same( testVar.redirectCount, 3, "reload方法重新route当前location" );
 });

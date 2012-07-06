@@ -2,26 +2,30 @@
  * ESUI (Enterprise Simple UI)
  * Copyright 2011 Baidu Inc. All rights reserved.
  * 
- * path:    ui/Button.js
+ * path:    esui/Button.js
  * desc:    按钮控件
  * author:  erik, zhaolei
- * date:    2011/01/19
  */
+
+///import esui.Control;
+///import baidu.lang.inherits;
 
 /**
  * 按钮控件
  * 
  * @param {Object} options 控件初始化参数
  */
-ui.Button = function (options) {
-    // 初始化参数
-    this.__initOptions(options);
-    
+esui.Button = function ( options ) {
     // 类型声明，用于生成控件子dom的id和class
     this._type = 'button';
+    
+    // 标识鼠标事件触发自动状态转换
+    this._autoState = 1;
+
+    esui.Control.call( this, options );
 };
 
-ui.Button.prototype = {
+esui.Button.prototype = {
     /**
      * button的html模板
      *
@@ -45,93 +49,69 @@ ui.Button.prototype = {
     _getMainHtml: function() {
         var me = this;
         
-        return ui._format(
+        return esui.util.format(
             me._tplButton,
             me.content || '&nbsp;',
-            me.__getClass('label'),
-            me.__getId('label')
+            me.__getClass( 'label' ),
+            me.__getId( 'label' )
         );
-    },
-    
-    /**
-     * 设置是否不可用
-     * 
-     * @public
-     * @param {boolean} stat 状态
-     */
-    disable: function (stat) {
-        var state = 'disabled';
-
-        if (stat) {
-            this.setState(state);
-        } else {
-            this.removeState(state);
-        }
     },
 
     /**
      * 设置是否为Active状态
      * 
-     * @protected
-     * @param {boolean} stat 状态
+     * @public
+     * @param {boolean} active active状态
      */
-    active: function (stat) {
+    setActive: function ( active ) {
         var state = 'active';
 
-        if (stat) {
-            this.setState(state);
+        if ( active ) {
+            this.setState( state );
         } else {
-            this.removeState(state);
+            this.removeState( state );
         }
     },
     
     /**
      * 渲染控件
      * 
-     * @param {HTMLElement} main 控件挂载的DOM
+     * @public
      */
-    render: function (main) {
-        var me = this, 
-            innerDiv;
+    render: function () {
+        var me   = this;
+        var main = me.main;
+        var father;
+        var temp;
         
-        if ( !me._isRender ) {
-            innerDiv = main.firstChild;
-            if (!me.content 
-                && innerDiv 
-                && innerDiv.tagName != 'DIV'
-            ) {
+        if ( !me._isRendered ) {
+            if ( !me.content ) {
                 me.content = main.innerHTML;
             }
             
-            ui.Base.render.call(me, main, true);
+            // 如果是button的话，替换成一个DIV
+            if ( main.tagName == 'BUTTON' ) {
+                father = main.parentNode;
+                temp = document.createElement( 'div' );
+                father.insertBefore( temp, main );
+                father.removeChild( main );
+                main = me.main = temp;
+            }
+
+            esui.Control.prototype.render.call( me );
             main.innerHTML = me._getMainHtml();
 
             // 初始化状态事件
             main.onclick = me._getHandlerClick();
 
-            me._isRender = 1;
+            me._isRendered = true;
         }
 
         // 设定宽度
         me.width && (main.style.width = me.width + 'px');
         
         // 设置disabled
-        me.disable(me.disabled);
-    },
-    
-    /**
-     * 将控件添加到某个dom元素中
-     * 
-     * @param {HTMLElement} wrap 目标dom
-     */
-    appendTo: function (wrap) {
-        if (this._main) {
-            return;
-        }
-
-        var main = document.createElement('div');
-        wrap.appendChild(main);
-        this.render(main);
+        me.setDisabled( me.disabled );
     },
     
     /**
@@ -142,11 +122,13 @@ ui.Button.prototype = {
      */
     _getHandlerClick: function() {
         var me = this;
-        return function (e) {
-            if ( !me.getState( 'disabled' ) ) {
-                me.onclick();
+        return function ( e ) {
+            if ( !me.isDisabled() ) {
+                if (false === me.onclick()) {
+                    baidu.event.stop(e || window.event);
+                }
             }
-        }
+        };
     },
     
     /**
@@ -155,19 +137,19 @@ ui.Button.prototype = {
      * @public
      * @param {string} content 按钮的显示文字
      */
-    setContent: function (content) {
-        baidu.g(this.__getId('label')).innerHTML = content;
+    setContent: function ( content ) {
+        baidu.g( this.__getId( 'label' ) ).innerHTML = content;
     },
     
     /**
      * 释放控件
      * 
-     * @public
+     * @private
      */
-    dispose: function () {
-        this._main.onclick = null;
-        ui.Base.dispose.call(this);
+    __dispose: function () {
+        this.onclick = null;
+        esui.Control.prototype.__dispose.call( this );
     }
 };
 
-ui.BaseInput.derive(ui.Button);
+baidu.inherits( esui.Button, esui.Control );

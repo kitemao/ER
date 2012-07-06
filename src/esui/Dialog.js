@@ -2,52 +2,59 @@
  * ESUI (Enterprise Simple UI)
  * Copyright 2010 Baidu Inc. All rights reserved.
  * 
- * path:    ui/Dialog.js
+ * path:    esui/Dialog.js
  * desc:    对话框控件
  * author:  zhaolei, erik, linzhifeng
- * date:    $Date$
  */
+
+///import esui.Control;
+///import esui.Layer;
+///import esui.Button;
+///import esui.Mask;
+///import baidu.lang.inherits;
+///import baidu.dom.draggable;
+///import baidu.event.on;
+///import baidu.event.un;
 
 /**
  * 对话框控件
  * 
  * @param {Object} options 控件初始化参数
  */
-ui.Dialog = function (options) {
-    this.__initOptions(options);
+esui.Dialog = function ( options ) {
+    // 类型声明，用于生成控件子dom的id和class
     this._type = 'dialog';
-    this._controlMap = {};
     
+    // 标识鼠标事件触发自动状态转换
+    this._autoState = 0;
+    
+    esui.Control.call( this, options );
+
     // 初始化自动定位参数
     this.__initOption('autoPosition', null, 'AUTO_POSITION');
     
     // 初始化可拖拽参数
-    this.__initOption('dragable', null, 'DRAGABLE');
+    this.__initOption('draggable', null, 'DRAGGABLE');
 
     // 初始化关闭按钮参数
-    this.__initOption('closeButton', null, 'CLOSE_BUTTON')
+    this.__initOption('closeButton', null, 'CLOSE_BUTTON');
     
     // 初始化宽度
     this.__initOption('width', null, 'WIDTH');
 
     // 初始化距离顶端的高度
     this.__initOption('top', null, 'TOP');
+    this.top = parseInt( this.top, 10 );
 
     this._resizeHandler = this._getResizeHandler();
 };
 
-ui.Dialog.prototype = {    
-    /**
-     * 对话框主体和尾部的html模板
-     * @private
-     */
-    _tplBF: '<div class="{1}" id="{0}">{2}</div>',
-    
+esui.Dialog.prototype = {
     /**
      * 对话框头部的html模板
      * @private
      */
-    _tplHead: '<div id="{0}" class="{1}"><div id="{2}" class="{3}" onmouseover="{6}" onmouseout="{7}">{4}</div>{5}</div>',
+    _tplHead: '<div id="{0}" class="{1}" onmouseover="{4}" onmouseout="{5}">{2}</div>{3}',
     
     /**
      * 关闭按钮的html模板
@@ -63,28 +70,23 @@ ui.Dialog.prototype = {
     show: function () {
         var mask = this.mask;
         var main;
-        if (!this.getLayer()) {
+        if ( !this.getLayer() ) {
             this.render();            
         }
 
-        main = this.getLayer().getMain();
+        main = this.getLayer().main;
 
         // 浮动层自动定位功能初始化
         if ( this.autoPosition ) {
-            baidu.on(window, 'resize', this._resizeHandler);
+            baidu.on( window, 'resize', this._resizeHandler );
         }
         
-        this._resizeHandler(); 
-
-        // 拖拽功能初始化
-        if ( this.dragable ) {
-            baidu.dom.draggable(main, {handler:this.getHead()});
-        }        
+        this._resizeHandler();     
         
         // 如果mask不是object，则会隐式装箱
         // 装箱后的Object不具有level和type属性
         // 相当于未传参数
-        mask && ui.Mask.show(mask.level, mask.type);
+        mask && esui.Mask.show( mask.level, mask.type );
         
         this._isShow = true;
     },
@@ -97,11 +99,11 @@ ui.Dialog.prototype = {
     hide: function () {
         if ( this._isShow ) {
             if ( this.autoPosition ) {
-                baidu.un(window, 'resize', this._resizeHandler);
+                baidu.un( window, 'resize', this._resizeHandler );
             }
             
             this.getLayer().hide();
-            this.mask && ui.Mask.hide(this.mask.level);
+            this.mask && esui.Mask.hide( this.mask.level );
         }
 
         this._isShow = 0;
@@ -111,7 +113,7 @@ ui.Dialog.prototype = {
      * 获取浮出层控件对象
      * 
      * @public
-     * @return {ui.Layer}
+     * @return {esui.Layer}
      */
     getLayer: function () {
         return this._controlMap.layer;
@@ -123,9 +125,9 @@ ui.Dialog.prototype = {
      * @public
      * @param {string} html 要设置的文字，支持html
      */
-    setTitle: function (html) {
-        var el = baidu.g(this.__getId('title'));
-        if (el) {
+    setTitle: function ( html ) {
+        var el = baidu.g( this.__getId( 'title' ) );
+        if ( el ) {
             el.innerHTML = html;
         }
         this.title = html;
@@ -137,10 +139,10 @@ ui.Dialog.prototype = {
      * @public
      * @param {string} content 要设置的内容，支持html.
      */
-    setContent: function (content) {
+    setContent: function ( content ) {
         this.content = content;
         var body = this.getBody();
-        body && (body.innerHTML = content);
+        body && ( body.innerHTML = content );
     },
 
     
@@ -154,24 +156,25 @@ ui.Dialog.prototype = {
         var me = this;
             
         return function () {
-            var layer = me.getLayer(),
-                main = layer.getMain(),
-                left = me.left,
-                top = me.top; 
+            var layer   = me.getLayer(),
+                main    = layer.main,
+                left    = me.left,
+                top     = me.top; 
             
-            !left 
-                && (left = (baidu.page.getViewWidth() - main.offsetWidth) / 2);
+            if ( !left ) {
+                left = (baidu.page.getViewWidth() - main.offsetWidth) / 2;
+            }
             top += baidu.page.getScrollTop();
             
-            if (left < 0) {
+            if ( left < 0 ) {
                 left = 0;
             }
 
-            if (top < 0) {
+            if ( top < 0 ) {
                 top = 0;
             }
             
-            layer.show(left, top);
+            layer.show( left, top );
         };
     },
     
@@ -197,81 +200,205 @@ ui.Dialog.prototype = {
      * @public
      */
     render: function () {
-        var me = this,
-            layer = me.getLayer(),
-            layerControl,
-            main,
-            closeBtn;
+        var me      = this;
+        var layer   = me.getLayer();
+        var main    = me.main;
         
         // 避免重复创建    
-        if (layer) {
+        if ( layer ) {
             return;
         }
         
-        layer = ui.util.create('Layer', {
-                id      : me.__getId('layer'),
+        layer = esui.util.create( 'Layer', {
+                id      : me.__getId( 'layer' ),
                 retype  : me._type,
-                skin    : me.dragable ? 'dragable' : '',
-                width   : me.width
-            });
+                skin    : me.skin + ( me.draggable ? ' draggable' : '' ),
+                width   : me.width,
+                main    : main
+            } );
         layer.appendTo();
         me._controlMap.layer = layer;
         
         
-        // 写入结构
-        main = layer.getMain();
-        main.innerHTML = me._getHeadHtml()
-                            + me._getBFHtml('body')
-                            + me._getBFHtml('foot');
+        // 初始化dialog结构
+        me._initStruct();
+        
+        // 拖拽功能初始化
+        if ( this.draggable ) {
+            baidu.dom.draggable( layer.main, {handler:this.getHead()} );
+        }
+    },
+    
+    /** 
+     * dialog只允许在body下。重置appendTo方法
+     *
+     * @public
+     */ 
+    appendTo: function () {
+        this.render();
+    },
+    
+    /** 
+     * 初始化dialog的结构
+     *
+     * @private
+     */
+    _initStruct: function () {
+        var layer = this.getLayer();
+        var main = layer.main;
+        var childs = [], childCount;
+        var el;
+
+        el = main.firstChild;
+        while ( el ) {
+            if ( el.nodeType == 1 ) {
+                childs.push( el );
+            }
+
+            el = el.nextSibling;
+        }
+        childCount = childs.length;
+
+        this._initHead( childCount < 2, childs[ 0 ] );
+        this._initBody( childCount < 1, childs[ 1 ] || childs[ 0 ] );
+        this._initFoot( childCount < 3, childs[ 2 ] );
+    },
+
+    /** 
+     * dialog不需要创建main，方法置空
+     *
+     * @private
+     */
+    __createMain: function () {},
+    
+    /**
+     * 初始化dialog的head
+     *
+     * @private
+     * @param {boolean} needCreate 是否需要创建head元素
+     * @param {HTMLElement} head 现有的head元素
+     */
+    _initHead: function ( needCreate, head ) {
+        var me      = this;
+        var layer   = me.getLayer();
+        var main    = layer.main;
+        var closeId = me.__getId( 'close' );
+        var layerControl, closeBtn;
+
+        if ( needCreate ) {
+            head = document.createElement( 'div' );
+            main.insertBefore( head, main.firstChild );
+        } else {
+            this.title = this.title || head.innerHTML;
+        }
+        
+        baidu.addClass( head, this.__getClass( 'head' ) );
+        head.id = this.__getId( 'head' );
+        head.innerHTML = esui.util.format(
+            me._tplHead,
+            me.__getId( 'title' ),
+            me.__getClass( 'title' ),
+            me.title,
+            (!me.closeButton  ? '' :
+                esui.util.format(
+                    me._tplClose,
+                    closeId
+            ) ),
+            me.__getStrCall( '_headOver' ),
+            me.__getStrCall( '_headOut' )
+        );
 
         // 初始化关闭按钮
-        layerControl = ui.util.init(main);
-        closeBtn = layerControl[me.__getId('close')];
-        if (closeBtn) {
-            layer._controlMap.close = closeBtn;
+        layerControl = esui.util.init( head );
+        closeBtn     = layerControl[ closeId ];
+        if ( closeBtn ) {
+            layer._controlMap._close = closeBtn;
             closeBtn.onclick = me._getCloseHandler();
+        }
+    },
+
+    /**
+     * 初始化dialog的body
+     *
+     * @private
+     * @param {boolean} needCreate 是否需要创建body元素
+     * @param {HTMLElement} body 现有的body元素
+     */
+    _initBody: function ( needCreate, body ) {
+        if ( needCreate ) {
+            body = document.createElement( 'div' );
+            this.getLayer().main.appendChild( body );
+        }
+        
+        baidu.addClass( body, this.__getClass( 'body' ) );
+        body.id = this.__getId( 'body' );
+
+        if ( this.content ) {
+            body.innerHTML = this.content;
+        } else {
+            this.content = body.innerHTML;
+        }
+    },
+
+    /**
+     * 初始化dialog的foot
+     *
+     * @private
+     * @param {boolean} needCreate 是否需要创建foot元素
+     * @param {HTMLElement} foot 现有的foot元素
+     */
+    _initFoot: function ( needCreate, foot ) {
+        var layer = this.getLayer();
+        var controls;
+        var control;
+        var i = 0, len;
+        var index = 0;
+
+        if ( needCreate ) {
+            foot = document.createElement( 'div' );
+            layer.main.appendChild( foot );
+        }
+        
+        baidu.addClass( foot, this.__getClass( 'foot' ) );
+        foot.id = this.__getId( 'foot' );
+
+        if ( this.footContent ) {
+            foot.innerHTML = this.footContent;
+        }
+
+        // 初始化foot的按钮
+        esui.util.init( foot );
+        controls = esui.util.getControlsByContainer( foot );
+        this._commandHandler = this._getCommandHandler();
+        for ( len = controls.length; i < len; i++ ) {
+            control = controls[ i ];
+            if ( control instanceof esui.Button ) {
+                control.onclick = this._commandHandler;
+                control._dialogCmdIndex = index;
+                index++;
+            }
+
+            layer._controlMap[ control.id ] = control;
         }
     },
     
     /**
-     * 获取对话框头部的html
-     * 
+     * 获取command handler
+     *
      * @private
-     * @return {string}
+     * @return {Function} 
      */
-    _getHeadHtml: function () {
-        var me = this,
-            head = 'head',
-            title = 'title';
-        
-        return ui._format(me._tplHead,
-                          me.__getId(head),
-                          me.__getClass(head),
-                          me.__getId(title),
-                          me.__getClass(title),
-                          me.title,
-                          (!me.closeButton  ? '' :
-                              ui._format(me._tplClose,
-                                         me.__getId('close'))),
-                          me.__getStrCall('_headOver'),
-                          me.__getStrCall('_headOut'))                            
-    },
-    
-    /**
-     * 获取对话框主体和腿部的html
-     * 
-     * @private
-     * @param {string type 类型 body|foot
-     * @return {string}
-     */
-    _getBFHtml: function (type) {
+    _getCommandHandler: function () {
         var me = this;
-        return ui._format(me._tplBF,
-                          me.__getId(type),
-                          me.__getClass(type),
-                          type == 'body' ? me.content : '');
+        return function () {
+            if ( me.oncommand( { index: this._dialogCmdIndex } ) !== false ) {
+                me.hide();
+            }
+        };
     },
-    
+
+    oncommand: new Function(),
+
     /**
      * 获取对话框主体的dom元素
      * 
@@ -279,7 +406,7 @@ ui.Dialog.prototype = {
      * @return {HTMLElement}
      */
     getBody: function () {
-        return baidu.g(this.__getId('body'));
+        return baidu.g( this.__getId( 'body' ) );
     },
     
     /**
@@ -289,7 +416,7 @@ ui.Dialog.prototype = {
      * @return {HTMLElement}
      */
     getHead: function () {
-        return baidu.g(this.__getId('head'));
+        return baidu.g( this.__getId( 'head' ) );
     },
 
     /**
@@ -299,7 +426,7 @@ ui.Dialog.prototype = {
      * @return {HTMLElement}
      */
     getFoot: function () {
-        return baidu.g(this.__getId('foot'));
+        return baidu.g( this.__getId( 'foot' ) );
     },
     
     /**
@@ -308,8 +435,9 @@ ui.Dialog.prototype = {
      * @private
      */
     _headOver: function () {
-        baidu.addClass(this.getHead(), 
-                       this.__getClass('head-hover'));
+        baidu.addClass(
+            this.getHead(), 
+            this.__getClass( 'head-hover' ) );
     },
     
     /**
@@ -318,34 +446,36 @@ ui.Dialog.prototype = {
      * @private
      */
     _headOut: function () {
-        baidu.removeClass(this.getHead(), 
-                          this.__getClass('head-hover'));
+        baidu.removeClass(
+            this.getHead(), 
+            this.__getClass( 'head-hover' ) );
     },
 
     /**
      * 释放控件
      * 
-     * @public
+     * @private
      */
-    dispose: function () {
-        if (this.autoPosition) {
-            baidu.un(window, 'resize', this._resizeHandler);
+    __dispose: function () {
+        if ( this.autoPosition ) {
+            baidu.un( window, 'resize', this._resizeHandler );
         }
+        
+        this.oncommand = null;
         this._resizeHandler = null;
-
-        ui.Base.dispose.call(this);
+        esui.Control.prototype.__dispose.call( this );
     }
 };
 
-ui.Base.derive(ui.Dialog);
+baidu.inherits( esui.Dialog, esui.Control );
 
-ui.Dialog.TOP = 100;
-ui.Dialog.WIDTH = 400;
-ui.Dialog.CLOSE_BUTTON = 1;
-ui.Dialog.OK_TEXT = '确定';
-ui.Dialog.CANCEL_TEXT = '取消';
+esui.Dialog.TOP             = 100;
+esui.Dialog.WIDTH           = 400;
+esui.Dialog.CLOSE_BUTTON    = 1;
+esui.Dialog.OK_TEXT         = '确定';
+esui.Dialog.CANCEL_TEXT     = '取消';
 
-ui.Dialog._increment = function () {
+esui.Dialog._increment = function () {
     var i = 0;
     return function () {
         return i++;
@@ -355,9 +485,12 @@ ui.Dialog._increment = function () {
 /**
  * alert dialog
  */
-ui.Dialog.alert = (function () {
+esui.Dialog.alert = (function () {
     var dialogPrefix = '__DialogAlert';
     var buttonPrefix = '__DialogAlertOk';
+
+    var tpl     = '<div class="ui-dialog-icon ui-dialog-icon-{0}"></div><div class="ui-dialog-text">{1}</div>';
+    var footTpl = '<button ui="type:Button;id:{0};skin:em">{1}</button>';
 
     /**
      * 获取按钮点击的处理函数
@@ -366,19 +499,21 @@ ui.Dialog.alert = (function () {
      * @param {Function} onok 用户定义的确定按钮点击函数
      * @return {Function}
      */
-    function getBtnClickHandler(onok, id) {
+    function getDialogCommander( onok, id ) {
         return function() {
-            var dialog = ui.get(dialogPrefix + id);
-            var isFunc = (typeof onok == 'function');
+            var dialog = esui.util.get( dialogPrefix + id );
+            var isFunc = ( typeof onok == 'function' );
 
-            if ((isFunc && onok(dialog) !== false) || !isFunc) {
+            if ( ( isFunc && onok( dialog ) !== false ) 
+                 || !isFunc
+            ) {
                 dialog.hide();
 
-                ui.util.dispose(buttonPrefix + id);
-                ui.util.dispose(dialog.id);
-                
-                dialog = null;
+                esui.util.dispose( buttonPrefix + id );
+                esui.util.dispose( dialog.id );
             }
+
+            return false;
         };
     }
     
@@ -391,37 +526,30 @@ ui.Dialog.alert = (function () {
      * @config {string} content 显示的文字内容
      * @config {Function} onok 点击确定按钮的行为，默认为关闭提示框
      */
-    function show (args) {
-        if (!args) {
+    function show ( args ) {
+        if ( !args ) {
             return;
         }
         
-        var index   = ui.Dialog._increment();
+        var index   = esui.Dialog._increment();
         var title   = args.title || '';
         var content = args.content || '';
         var type    = args.type || 'warning';
-        var onok    = args.onok;
-        var tpl     = '<div class="ui-dialog-icon ui-dialog-icon-{0}"></div><div class="ui-dialog-text">{1}</div>';
-        var dialog  = ui.util.create('Dialog', 
-                                  {
-                                      id: dialogPrefix + index,
-                                      closeButton: 0,
-                                      title:'', 
-                                      width:440,
-                                      mask: {level: 3 || args.level}
-                                  });
-        var button  = ui.util.create('Button', 
-                                  {
-                                      id: buttonPrefix + index,
-                                      skin:'em',
-                                      content: ui.Dialog.OK_TEXT
-                                  });
+        
+        var dialog  = esui.util.create('Dialog', 
+                          {
+                              id            : dialogPrefix + index,
+                              closeButton   : 0,
+                              title         : '', 
+                              width         : 440,
+                              mask          : {level: 3 || args.level},
+                              footContent   : esui.util.format( footTpl, buttonPrefix + index, esui.Dialog.OK_TEXT )
+                          });
         
         dialog.show();
-        dialog.setTitle(title);
-        dialog.getBody().innerHTML = ui._format(tpl, type, content);
-        button.onclick = getBtnClickHandler(onok, index);
-        button.appendTo(dialog.getFoot()); 
+        dialog.oncommand = getDialogCommander( args.onok, index );
+        dialog.setTitle( title );
+        dialog.getBody().innerHTML = esui.util.format( tpl, type, content );
     }
 
     return show;
@@ -430,32 +558,36 @@ ui.Dialog.alert = (function () {
 /**
  * confirm dialog
  */
-ui.Dialog.confirm = (function () {
+esui.Dialog.confirm = (function () {
     var dialogPrefix    = '__DialogConfirm';
     var okPrefix        = '__DialogConfirmOk';
     var cancelPrefix    = '__DialogConfirmCancel';
+
+    var tpl = '<div class="ui-dialog-icon ui-dialog-icon-{0}"></div><div class="ui-dialog-text">{1}</div>';
+    var footTpl = '<button ui="type:Button;id:{0};skin:em">{1}</button><button ui="type:Button;id:{2};">{3}</button>';
 
     /**
      * 获取按钮点击的处理函数
      * 
      * @private
-     * @param {Function} eventHandler 用户定义的按钮点击函数
-     * @return {Functioin}
+     * @param {Function} onok 用户定义的确定按钮点击函数
+     * @param {Function} oncancel 用户定义的取消按钮点击函数
+     * @return {Function}
      */
-    function getBtnClickHandler(eventHandler, id) {
-        return function(){
-            var dialog = ui.get(dialogPrefix + id);
+    function getDialogCommander( onok, oncancel, id ) {
+        return function ( args ) {
+            var dialog = esui.util.get( dialogPrefix + id );
+            var eventHandler = ( args.index === 0 ? onok : oncancel );
             var isFunc = (typeof eventHandler == 'function');
 
-            if ((isFunc && eventHandler(dialog) !== false) || !isFunc) {
+            if ( (isFunc && eventHandler( dialog ) !== false ) 
+                 || !isFunc 
+            ) {
                 dialog.hide();
-
-                ui.util.dispose(okPrefix + id);
-                ui.util.dispose(cancelPrefix + id);
-                ui.util.dispose(dialog.id);
-                
-                dialog = null;
+                esui.util.dispose( dialog.id );
             }
+
+            return false;
         };
     }
     
@@ -469,53 +601,35 @@ ui.Dialog.confirm = (function () {
      * @config {Function} onok 点击确定按钮的行为，默认为关闭提示框
      * @config {Function} oncancel 点击取消按钮的行为，默认为关闭提示框
      */
-    function show (args) {
-        if (!args) {
+    function show ( args ) {
+        if ( !args ) {
             return;
         }
         
-        var index       = ui.Dialog._increment();
+        var index       = esui.Dialog._increment();
         var title       = args.title || '';
         var content     = args.content || '';
-        var oncancel    = args.oncancel;
         var type        = args.type || 'warning';
-        var onok        = args.onok;
-        var tpl = '<div class="ui-dialog-icon ui-dialog-icon-{0}"></div><div class="ui-dialog-text">{1}</div>';
-        var dialog = ui.util.create('Dialog', 
-                                  {
-                                      id: dialogPrefix + index,
-                                      closeButton: 0,
-                                      title:'', 
-                                      width:440,
-                                      mask: {level: 3 || args.level}
-                                  });
-                                  
-        var okBtn = ui.util.create('Button', 
-                                  {
-                                      id: okPrefix + index,
-                                      skin:'em',
-                                      content: ui.Dialog.OK_TEXT
-                                  });
-                                  
-        var cancelBtn = ui.util.create('Button', 
-                                  {
-                                      id: cancelPrefix + index,
-                                      content: ui.Dialog.CANCEL_TEXT
-                                  });
-        dialog.show();
-        dialog.setTitle(title);
-        dialog.getBody().innerHTML = ui._format(tpl, type, content);
-        
-        var foot = dialog.getFoot();
-        okBtn.appendTo(foot);
-        cancelBtn.appendTo(foot);
 
-        
-        okBtn.onclick = getBtnClickHandler(onok, index);
-        cancelBtn.onclick = getBtnClickHandler(oncancel, index);
+        var dialog = esui.util.create('Dialog', 
+                          {
+                              id            : dialogPrefix + index,
+                              closeButton   : 0,
+                              title         : '', 
+                              width         : 440,
+                              mask          : {level: 3 || args.level},
+                              footContent   : esui.util.format( footTpl, 
+                                                                okPrefix + index, 
+                                                                esui.Dialog.OK_TEXT,
+                                                                cancelPrefix + index,
+                                                                esui.Dialog.CANCEL_TEXT)
+                          });
+
+        dialog.show();
+        dialog.setTitle( title );
+        dialog.getBody().innerHTML = esui.util.format( tpl, type, content );
+        dialog.oncommand = getDialogCommander( args.onok, args.oncancel, index );
     }
     
     return show;
 })();
-
-

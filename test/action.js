@@ -17,6 +17,45 @@ test("leave", function() {
     same( testVar.onleave, 1, "Action的onleave事件被触发过" );
 });
 
+er.Action.extend({
+    actionext: function () {
+        testVar.actionext = 1;
+    }
+});
+
+er.Action.extend({
+    actionext: function () {
+        testVar.actionext = 2;
+    }
+}, 'rename');
+
+test("extend", function () {
+    testVar.actionext = 0;
+    er.Action.onentercomplete = function () {
+        this.actionext();
+    };
+    er.locator.redirect( '/hello~name=erik' );
+    same( testVar.actionext, 1, "actionext方法extend到Action中" );
+
+    er.locator.redirect( '/ext~name=erik' );
+    same( testVar.actionext, 2, "actionext方法extend到带别名的Action中" );
+});
+
+test("choose template", function() {
+    er.locator.redirect( '/tpl~tpl=tpla' );
+    same( baidu.g( 'Main' ).innerHTML, 'im a', "通过template属性选中template tpla" );
+    
+    er.locator.redirect( '/tplbyview~tpl=tpla' );
+    same( baidu.g( 'Main' ).innerHTML, 'im a', "通过view属性选中template tpla" );
+    
+    er.locator.redirect( '/tpl~tpl=tplb' );
+    same( baidu.g( 'Main' ).innerHTML, 'im b', "通过template属性选中template tplb" );
+    
+
+    er.locator.redirect( '/tplbyview~tpl=tplb' );
+    same( baidu.g( 'Main' ).innerHTML, 'im b', "通过view属性选中template tplb" );
+});
+
 test("autoload", function() {
     er.locator.redirect( '/auto' );
     stop();
